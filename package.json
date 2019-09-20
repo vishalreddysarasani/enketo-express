@@ -44,7 +44,7 @@
         "csurf": "1.10.x",
         "db.js": "0.15.0",
         "debug": "4.1.x",
-        "enketo-core": "5.6.0",
+        "enketo-core": "vishalreddysarasani/enketo-core#master",
         "enketo-transformer": "1.33.0",
         "express": "4.x.x",
         "grunt": "^1.0.3",

@@ -19,6 +19,7 @@ let form;
 let formSelector;
 let formData;
 let formprogress;
+let formNodesArray;
 const formOptions = {
     clearIrrelevantImmediately: false,
     printRelevantOnly: settings.printRelevantOnly
@@ -218,12 +219,72 @@ function _loadRecord( instanceId, confirmed ) {
     }
 }
 
+function createElementFromHTML(htmlString) {
+    var div = document.createElement('div');
+    div.innerHTML = htmlString.trim();
+    return div.firstChild;
+}
+
+function buildInitialForm(formParts) {
+    const $formelement = createElementFromHTML(formParts.form);
+    let emptyParent = createElementFromHTML(formParts.form);
+    emptyParent.innerHTML = "";
+    formNodesArray = [];
+    let k=0;
+    for (let i = 0; i < $formelement.children.length; i++) {
+        if ($formelement.children[i].id !== "form-languages") {
+            formNodesArray[k] = $formelement.children[i].outerHTML;
+            k++;
+        }
+    }
+    console.log(formNodesArray);
+    console.log($formelement.children);
+    console.log($formelement.childNodes);
+    for (let i = 0; i < 2; i++) {
+        emptyParent.insertAdjacentHTML('beforeend', formNodesArray[i]);
+    }
+    for (let j = 2; j < 5; j++) {
+        emptyParent.insertAdjacentHTML('beforeend', formNodesArray[j]);
+    }
+    localStorage.setItem("isLast", "false");
+    localStorage.setItem("isFirst", "true");
+    localStorage.setItem("currentStartIndex", "5");
+    localStorage.setItem("formNodesArray", JSON.stringify(formNodesArray));
+    return emptyParent;
+}
+
+function getCurrentForm() {
+    const include = {
+        irrelevant: false
+    };
+    console.log(form.getDataStr( include ));
+    return form.getDataStr( include );
+}
+
+function getCurrentFiles() {
+    return fileManager.getCurrentFiles();
+}
+
+function goToLastPage() {
+    return form.goToLastPage();
+}
+
+function clearLocalStorageValues() {
+    localStorage.removeItem('currentStartIndex');
+    localStorage.removeItem('previousStartIndex');
+    localStorage.removeItem('isFirst');
+    localStorage.removeItem('isLast');
+    localStorage.removeItem('formNodesArray');
+    localStorage.removeItem('moving');
+}
+
 /**
  * Used to submit a form.
  * This function does not save the record in localStorage
  * and is not used in offline-capable views.
  */
 function _submitRecord() {
+    clearLocalStorageValues(); // clear saved data
     const redirect = settings.type === 'single' || settings.type === 'edit' || settings.type === 'view';
     let beforeMsg;
     let authLink;
@@ -232,7 +293,6 @@ function _submitRecord() {
     const include = {
         irrelevant: false
     };
-
     form.view.$.trigger( 'beforesave' );
 
     beforeMsg = ( redirect ) ? t( 'alert.submission.redirectmsg' ) : '';
@@ -240,7 +300,11 @@ function _submitRecord() {
 
     gui.alert( `${beforeMsg}<div class="loader-animation-small" style="margin: 40px auto 0 auto;"/>`, t( 'alert.submission.msg' ), 'bare' );
 
-
+    // let allFiles = fileManager.getCurrentFiles();
+    // if (localStorage.getItem('currentFiles')) {
+    //     let existingFiles = JSON.parse(localStorage.getItem('currentFiles'));
+    //     allFiles = existingFiles.concat(allFiles);
+    // }
 
     return new Promise( resolve => {
             const record = {
@@ -283,14 +347,14 @@ function _submitRecord() {
                     const age = 31536000;
                     const d = new Date();
                     /**
-                     * Manipulate the browser history to work around potential ways to 
+                     * Manipulate the browser history to work around potential ways to
                      * circumvent protection against multiple submissions:
                      * 1. After redirect, click Back button to load cached version.
                      */
                     history.replaceState( {}, '', `${settings.defaultReturnUrl}?taken=${now.getTime()}` );
                     /**
-                     * The above replaceState doesn't work in Safari and probably in 
-                     * some other browsers (mobile). It shows the 
+                     * The above replaceState doesn't work in Safari and probably in
+                     * some other browsers (mobile). It shows the
                      * final submission dialog when clicking Back.
                      * So we remove the form...
                      */
@@ -643,7 +707,7 @@ function _getDraftStatus() {
     return $( '.form-footer [name="draft"]' ).prop( 'checked' );
 }
 
-/** 
+/**
  * Determines whether the page is loaded inside an iframe
  * @return {boolean} [description]
  */
@@ -675,5 +739,9 @@ export default {
     init,
     setLogoutLinkVisibility,
     inIframe,
-    postEventAsMessageToParentWindow
+    postEventAsMessageToParentWindow,
+    buildInitialForm,
+    getCurrentForm,
+    goToLastPage,
+    getCurrentFiles
 };

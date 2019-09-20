@@ -5,6 +5,8 @@ import settings from './module/settings';
 import connection from './module/connection';
 import { init as initTranslator, t, localize } from './module/translator';
 import utils from './module/utils';
+
+
 const $loader = $( '.main-loader' );
 const $formheader = $( '.main > .paper > .form-header' );
 const survey = {
@@ -51,7 +53,9 @@ function _showErrorOrAuthenticate( error ) {
 }
 
 function _init( formParts ) {
-    $formheader.after( formParts.form );
+    const initialForm = controller.buildInitialForm(formParts);
+    $formheader.after( initialForm );
+    const formId = initialForm.id;
     localize( document.querySelector( 'form.or' ) );
     $( document ).ready( () => {
         controller.init( 'form.or:eq(0)', {
@@ -63,4 +67,27 @@ function _init( formParts ) {
             $( 'head>title' ).text( utils.getTitleFromFormStr( formParts.form ) );
         } );
     } );
+
+    $("#"+formId).on('formUpdate', function() {
+        controller.init( 'form.or:eq(0)', {
+            modelStr: formParts.model,
+            instanceStr: controller.getCurrentForm(),
+            external: formParts.externalData,
+            instanceAttachments: [], //need to handle files
+            // instanceAttachments: localStorage.getItem('currentFiles') ? JSON.parse(localStorage.getItem('currentFiles')) : [], //need to handle files
+        } ).then( () => {
+            $( 'head>title' ).text( utils.getTitleFromFormStr( formParts.form ) );
+            if (localStorage.getItem('moving') === 'backward') {
+                controller.goToLastPage();
+            }
+            // let currentFiles = controller.getCurrentFiles();
+            // if (currentFiles.length > 0) {
+            //     if (localStorage.getItem('currentFiles')){
+            //         let existingFiles = JSON.parse(localStorage.getItem('currentFiles'));
+            //         currentFiles = existingFiles.concat(currentFiles)
+            //     }
+            //     localStorage.setItem('currentFiles', JSON.stringify(currentFiles))
+            // }
+        } );
+    });
 }

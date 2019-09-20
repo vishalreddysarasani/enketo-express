@@ -121,7 +121,7 @@ function _setEmergencyHandlers() {
 
 /**
  * Adds/replaces branding if necessary, and unhides branding.
- * 
+ *
  * @param {*} survey [description]
  */
 function _addBranding( survey ) {
@@ -139,7 +139,7 @@ function _addBranding( survey ) {
 
 /**
  * Swaps the theme if necessary.
- * 
+ *
  * @param  {*} survey [description]
  * @return {*}        [description]
  */
@@ -180,7 +180,9 @@ function _init( formParts ) {
 
     return new Promise( ( resolve, reject ) => {
         if ( formParts && formParts.form && formParts.model ) {
-            $formheader.after( formParts.form );
+            const initialForm = controller.buildInitialForm(formParts);
+            const formId = initialForm.id;
+            $formheader.after( initialForm );
             $( document ).ready( () => {
                 // TODO pass $form as first parameter?
                 // controller.init is asynchronous
@@ -199,6 +201,26 @@ function _init( formParts ) {
                     resolve( formParts );
                 } );
             } );
+
+            $("#"+formId).on('formUpdate', function() {
+                controller.init( 'form.or:eq(0)', {
+                    modelStr: formParts.model,
+                    instanceStr: controller.getCurrentForm(),
+                    external: formParts.externalData //need to handle files
+                } ).then( form => {
+                    $( 'head>title' ).text( utils.getTitleFromFormStr( formParts.form ) );
+                    formParts.$form = form.view.$;
+                    if ( settings.print ) {
+                        gui.applyPrintStyle();
+                    }
+                    // after widgets have been initialized, localize all data-i18n elements
+                    localize( document.querySelector( 'form.or' ) );
+                    resolve( formParts );
+                    if (localStorage.getItem('moving') === 'backward') {
+                        controller.goToLastPage();
+                    }
+                } );
+            });
         } else if ( formParts ) {
             error = new Error( 'Form not complete.' );
             error.status = 400;
